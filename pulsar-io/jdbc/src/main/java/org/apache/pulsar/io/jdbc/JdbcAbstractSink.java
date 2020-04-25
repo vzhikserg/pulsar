@@ -37,8 +37,7 @@ import org.apache.pulsar.io.core.Sink;
 import org.apache.pulsar.io.core.SinkContext;
 
 /**
- * A Simple abstract class for Jdbc sink
- * Users need to implement extractKeyValue function to use this sink
+ * A Simple abstract class for Jdbc sink.
  */
 @Slf4j
 public abstract class JdbcAbstractSink<T> implements Sink<T> {
@@ -51,8 +50,8 @@ public abstract class JdbcAbstractSink<T> implements Sink<T> {
 
     private JdbcUtils.TableId tableId;
     private PreparedStatement insertStatement;
-    private PreparedStatement updateStatment;
-    private PreparedStatement deleteStatment;
+    private PreparedStatement updateStatement;
+    private PreparedStatement deleteStatement;
 
 
     protected static final String ACTION = "ACTION";
@@ -66,7 +65,6 @@ public abstract class JdbcAbstractSink<T> implements Sink<T> {
     private List<Record<T>> incomingList;
     private List<Record<T>> swapList;
     private AtomicBoolean isFlushing;
-    private int timeoutMs;
     private int batchSize;
     private ScheduledExecutorService flushExecutor;
 
@@ -98,14 +96,14 @@ public abstract class JdbcAbstractSink<T> implements Sink<T> {
         // Init PreparedStatement include insert, delete, update
         initStatement();
 
-        timeoutMs = jdbcSinkConfig.getTimeoutMs();
+        int timeoutMs = jdbcSinkConfig.getTimeoutMs();
         batchSize = jdbcSinkConfig.getBatchSize();
         incomingList = Lists.newArrayList();
         swapList = Lists.newArrayList();
         isFlushing = new AtomicBoolean(false);
 
         flushExecutor = Executors.newScheduledThreadPool(1);
-        flushExecutor.scheduleAtFixedRate(() -> flush(), timeoutMs, timeoutMs, TimeUnit.MILLISECONDS);
+        flushExecutor.scheduleAtFixedRate(this::flush, timeoutMs, timeoutMs, TimeUnit.MILLISECONDS);
     }
 
     private void initStatement()  throws Exception {
@@ -123,10 +121,10 @@ public abstract class JdbcAbstractSink<T> implements Sink<T> {
         tableDefinition = JdbcUtils.getTableDefinition(connection, tableId, keyList, nonKeyList);
         insertStatement = JdbcUtils.buildInsertStatement(connection, JdbcUtils.buildInsertSql(tableDefinition));
         if (!nonKeyList.isEmpty()) {
-            updateStatment = JdbcUtils.buildUpdateStatement(connection, JdbcUtils.buildUpdateSql(tableDefinition));
+            updateStatement = JdbcUtils.buildUpdateStatement(connection, JdbcUtils.buildUpdateSql(tableDefinition));
         }
         if (!keyList.isEmpty()) {
-            deleteStatment = JdbcUtils.buildDeleteStatement(connection, JdbcUtils.buildDeleteSql(tableDefinition));
+            deleteStatement = JdbcUtils.buildDeleteStatement(connection, JdbcUtils.buildDeleteSql(tableDefinition));
         }
     }
 
@@ -150,7 +148,7 @@ public abstract class JdbcAbstractSink<T> implements Sink<T> {
             number = incomingList.size();
         }
         if (number == batchSize) {
-            flushExecutor.schedule(() -> flush(), 0, TimeUnit.MILLISECONDS);
+            flushExecutor.schedule(this::flush, 0, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -187,14 +185,14 @@ public abstract class JdbcAbstractSink<T> implements Sink<T> {
                     }
                     switch (action) {
                         case DELETE:
-                            bindValue(deleteStatment, record, action);
+                            bindValue(deleteStatement, record, action);
                             count += 1;
-                            deleteStatment.execute();
+                            deleteStatement.execute();
                             break;
                         case UPDATE:
-                            bindValue(updateStatment, record, action);
+                            bindValue(updateStatement, record, action);
                             count += 1;
-                            updateStatment.execute();
+                            updateStatement.execute();
                             break;
                         case INSERT:
                             bindValue(insertStatement, record, action);
@@ -208,10 +206,10 @@ public abstract class JdbcAbstractSink<T> implements Sink<T> {
                     }
                 }
                 connection.commit();
-                swapList.forEach(tRecord -> tRecord.ack());
+                swapList.forEach(Record::ack);
             } catch (Exception e) {
                 log.error("Got exception ", e);
-                swapList.forEach(tRecord -> tRecord.fail());
+                swapList.forEach(Record::fail);
             }
 
             if (swapList.size() != count) {

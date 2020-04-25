@@ -104,6 +104,8 @@ public class JdbcUtils {
             return "com.mysql.jdbc.Driver";
         } if (driver.equals("sqlite")) {
             return "org.sqlite.JDBC";
+        } if (driver.equals("postgresql")) {
+            return "org.postgresql.Driver";
         } else {
             throw new Exception("Not tested jdbc driver type: " + driver);
         }
@@ -191,6 +193,14 @@ public class JdbcUtils {
     public static String buildInsertSql(TableDefinition table) {
         StringBuilder builder = new StringBuilder();
         builder.append("INSERT INTO ");
+        if (table.tableId.getCatalogName() != null && !table.tableId.getCatalogName().isEmpty()) {
+            builder.append(table.tableId.getCatalogName());
+            builder.append(".");
+        }
+        if (table.tableId.getSchemaName() != null && !table.tableId.getSchemaName().isEmpty()) {
+            builder.append(table.tableId.getSchemaName());
+            builder.append(".");
+        }
         builder.append(table.tableId.getTableName());
         builder.append("(");
 
