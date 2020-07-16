@@ -244,7 +244,7 @@ public class FunctionStatsManager extends ComponentStatsManager{
         // report exception throw prometheus
         if (userExceptionRateLimiter.tryAcquire()) {
             String[] exceptionMetricsLabels = getExceptionMetricsLabels(ex);
-            userExceptions.labels(exceptionMetricsLabels).inc();
+            userExceptions.labels(exceptionMetricsLabels).set(1.0);
         }
     }
 
@@ -256,13 +256,13 @@ public class FunctionStatsManager extends ComponentStatsManager{
         // report exception throw prometheus
         if (sysExceptionRateLimiter.tryAcquire()) {
             String[] exceptionMetricsLabels = getExceptionMetricsLabels(ex);
-            sysExceptions.labels(exceptionMetricsLabels).inc();
+            sysExceptions.labels(exceptionMetricsLabels).set(1.0);
         }
     }
 
     private String[] getExceptionMetricsLabels(Throwable ex) {
         String[] exceptionMetricsLabels = Arrays.copyOf(metricsLabels, metricsLabels.length + 1);
-        exceptionMetricsLabels[exceptionMetricsLabels.length - 1] = ex.getClass().getName();
+        exceptionMetricsLabels[exceptionMetricsLabels.length - 1] = ex.getMessage() != null ? ex.getMessage() : "";
         return exceptionMetricsLabels;
     }
 
