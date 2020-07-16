@@ -460,12 +460,12 @@ class ContextImpl implements Context, SinkContext, SourceContext {
             String metricName = userMetricsLabelsEntry.getKey();
             String[] labels = userMetricsLabelsEntry.getValue();
             Summary.Child.Value summary = userMetricsSummary.labels(labels).get();
-            metricsMap.put(String.format("%s_%s_sum", USER_METRIC_PREFIX, metricName), summary.sum);
-            metricsMap.put(String.format("%s_%s_count", USER_METRIC_PREFIX, metricName), summary.count);
+            metricsMap.put(String.format("%s%s_sum", USER_METRIC_PREFIX, metricName), summary.sum);
+            metricsMap.put(String.format("%s%s_count", USER_METRIC_PREFIX, metricName), summary.count);
             for (Map.Entry<Double, Double> entry : summary.quantiles.entrySet()) {
                 Double quantile = entry.getKey();
                 Double value = entry.getValue();
-                metricsMap.put(String.format("%s_%s_%s", USER_METRIC_PREFIX, metricName, quantile), value);
+                metricsMap.put(String.format("%s%s_%s", USER_METRIC_PREFIX, metricName, quantile), value);
             }
         }
         return metricsMap;
