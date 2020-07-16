@@ -213,7 +213,7 @@ public class SourceStatsManager extends ComponentStatsManager {
         // report exception throw prometheus
         if (sysExceptionRateLimiter.tryAcquire()) {
             String[] exceptionMetricsLabels = getExceptionMetricsLabels(ex);
-            sysExceptions.labels(exceptionMetricsLabels).set(1.0);
+            sysExceptions.labels(exceptionMetricsLabels).inc();
         }
     }
 
@@ -231,13 +231,13 @@ public class SourceStatsManager extends ComponentStatsManager {
         // report exception throw prometheus
         if (sourceExceptionRateLimiter.tryAcquire()) {
             String[] exceptionMetricsLabels = getExceptionMetricsLabels(ex);
-            sourceExceptions.labels(exceptionMetricsLabels).set(1.0);
+            sourceExceptions.labels(exceptionMetricsLabels).inc();
         }
     }
 
     private String[] getExceptionMetricsLabels(Throwable ex) {
         String[] exceptionMetricsLabels = Arrays.copyOf(metricsLabels, metricsLabels.length + 1);
-        exceptionMetricsLabels[exceptionMetricsLabels.length - 1] = ex.getMessage() != null ? ex.getMessage() : "";
+        exceptionMetricsLabels[exceptionMetricsLabels.length - 1] = ex.getClass().getName();
         return exceptionMetricsLabels;
     }
 
